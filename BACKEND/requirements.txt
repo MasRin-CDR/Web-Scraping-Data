@@ -1,0 +1,27 @@
+# ── Web Framework ──
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+
+# ── Scraping ──
+playwright==1.44.0
+beautifulsoup4==4.12.3
+lxml==5.2.2
+
+# ── Database ──
+aiosqlite==0.20.0
+
+# ── Config & Validation ──
+pydantic==2.7.1
+pydantic-settings==2.2.1
+python-dotenv==1.0.1
+
+# ── Retry & Resilience ──
+tenacity==8.3.0
+
+# ── Logging ──
+loguru==0.7.2
+
+# ── Utilities ──
+aiofiles==23.2.1
+python-dateutil==2.9.0
+rich==13.7.1

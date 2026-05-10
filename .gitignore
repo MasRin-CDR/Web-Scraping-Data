@@ -1,0 +1,86 @@
+# ============================================================
+# Mahkamah Agung Scraper — .gitignore
+# ============================================================
+
+# ── Environment Variables (SECURITY) ─────────────────────────
+.env
+.env.*
+!.env.example
+!.env.local
+!.env.staging
+!.env.production
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── Virtual Environments ─────────────────────────────────────
+venv/
+.venv/
+ENV/
+env/
+
+# ── Playwright / Browser ─────────────────────────────────────
+.playwright/
+BACKEND/data/browser_profile/
+BACKEND/data/session_cookies.json
+
+# ── Database ─────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+BACKEND/data/*.db
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/
+BACKEND/logs/
+
+# ── Downloaded Files ─────────────────────────────────────────
+BACKEND/data/pdfs/
+BACKEND/data/*.csv
+
+# ── IDE / Editor ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ── OS Generated ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Node (if any) ────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Docker ───────────────────────────────────────────────────
+.docker/
+
+# ── Misc ─────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.temp
+.cache/
