@@ -1,39 +1,35 @@
-# ============================================================
-# docker-compose.yml — Mahkamah Agung Scraper Stack
-# ============================================================
-
 version: "3.9"
 
 services:
-  scraper-api:
+  scraper:
     build:
-      context: ./BACKEND
+      context: .
       dockerfile: Dockerfile
-    container_name: mahkamah-scraper-api
+    container_name: mahkamah_scraper
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8000}:8000"
+      - "8000:8000"
     volumes:
-      - ./BACKEND/data:/app/data
-      - ./BACKEND/logs:/app/logs
-      - ./FRONTEND:/app/frontend
+      # Persistent storage: database, pdf, browser profile, logs
+      - ./data:/app/data
+      - ./logs:/app/logs
     env_file:
       - .env
     environment:
+      # Override headless=true di Docker (tidak ada display)
       - HEADLESS=true
-      - HOST=0.0.0.0
-      - PORT=8000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: "1.5"
-        reservations:
-          memory: 512M
-          cpus: "0.5"
+      start_period: 60s
+
+  # Opsional: jalankan dengan display virtual jika butuh solve Cloudflare manual
+  # Uncomment block di bawah jika perlu mode non-headless di Docker
+  # scraper-visual:
+  #   build: .
+  #   environment:
+  #     - HEADLESS=false
+  #     - DISPLAY=:99
+  #   ...

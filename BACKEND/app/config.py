@@ -13,7 +13,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ─── Project Root ────────────────────────────────────────────────────────────
-BASE_DIR = Path(__file__).resolve().parent.parent  # BACKEND/
+BASE_DIR = Path(__file__).resolve().parent.parent  # root project
 
 
 # ─── Settings ────────────────────────────────────────────────────────────────
@@ -30,15 +30,16 @@ class Settings(BaseSettings):
     port: int = Field(default=8000)
     debug: bool = Field(default=False)
     cors_origins: str = Field(default="*")
+    log_level: str = Field(default="INFO")
 
-    # ── Database (SQLite by default) ──────────────────────────────────────────
+    # ── Database ──────────────────────────────────────────────────────────────
     db_path: str = Field(default=str(BASE_DIR / "data" / "mahkamah.db"))
 
     # ── Scraper ───────────────────────────────────────────────────────────────
     target_base_url: str = Field(
         default="https://putusan3.mahkamahagung.go.id"
     )
-    headless: bool = Field(default=False)
+    headless: bool = Field(default=True)          # ← True by default (Docker-safe)
     browser_timeout: int = Field(default=30_000)
     min_delay: float = Field(default=2.0, ge=0.5)
     max_delay: float = Field(default=5.0, ge=1.0)
@@ -49,13 +50,10 @@ class Settings(BaseSettings):
     request_timeout: int = Field(default=60)
 
     # ── Cache ─────────────────────────────────────────────────────────────────
-    cache_ttl_seconds: int = Field(default=3600)  # 1 hour
+    cache_ttl_seconds: int = Field(default=3600)
 
-    # ── Logging ───────────────────────────────────────────────────────────────
-    log_level: str = Field(default="INFO")
+    # ── Paths ─────────────────────────────────────────────────────────────────
     log_dir: Path = Field(default=BASE_DIR / "logs")
-
-    # ── Output ────────────────────────────────────────────────────────────────
     data_dir: Path = Field(default=BASE_DIR / "data")
     pdf_dir: Path = Field(default=BASE_DIR / "data" / "pdfs")
 

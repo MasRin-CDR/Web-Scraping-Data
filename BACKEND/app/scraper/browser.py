@@ -1,38 +1,39 @@
 """
 scraper/browser.py — Stealth Chromium Browser Manager
-Uses a PERSISTENT browser context so Cloudflare cf_clearance cookies
-survive across sessions. The user solves the Turnstile challenge once
-in the visible Chromium window, and all subsequent requests reuse
-those cookies automatically.
+
+Menggunakan PERSISTENT browser context agar cookie Cloudflare cf_clearance
+tetap tersimpan antar sesi. User cukup solve Turnstile sekali di jendela
+Chromium yang muncul, lalu semua request berikutnya pakai cookie tersebut.
+
+Perbaikan dari versi sebelumnya:
+- headless default True (aman untuk Docker)
+- Resource blocking tidak memblok halaman warm-up (CF butuh semua resource)
+- Timeout handling lebih robust
+- Browser args tambahan untuk Docker
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
 import random
 from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import (
-    Browser,
     BrowserContext,
     Page,
     Playwright,
     async_playwright,
 )
 
-from app.config import CHROMIUM_ARGS, settings, get_random_user_agent
+from app.config import CHROMIUM_ARGS, get_random_user_agent, settings
 from app.utils.logger import log
 
 # ─── Stealth JS Injection ─────────────────────────────────────────────────────
 STEALTH_SCRIPT = """
-// Override navigator.webdriver
 Object.defineProperty(navigator, 'webdriver', {
     get: () => undefined, configurable: true
 });
-
-// Fake plugins array
 Object.defineProperty(navigator, 'plugins', {
     get: () => {
         const p = [
@@ -46,81 +47,38 @@ Object.defineProperty(navigator, 'plugins', {
         return p;
     }
 });
-
-// Override languages
 Object.defineProperty(navigator, 'languages', {
     get: () => ['id-ID', 'id', 'en-US', 'en'],
 });
-
-// Override permissions query
 const _origQuery = window.navigator.permissions.query;
 window.navigator.permissions.query = (params) =>
     params.name === 'notifications'
         ? Promise.resolve({ state: Notification.permission })
         : _origQuery(params);
-
-// Chrome object
-window.chrome = {
-    runtime: {}, loadTimes: () => ({}), csi: () => ({}), app: {},
-};
-
-// Fix iframe navigator.webdriver
-const _iframeDesc = Object.getOwnPropertyDescriptor(
-    HTMLIFrameElement.prototype, 'contentWindow'
-);
-Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
-    get: function () {
-        const win = _iframeDesc.get.call(this);
-        try {
-            Object.defineProperty(win.navigator, 'webdriver', {
-                get: () => undefined,
-            });
-        } catch (_) {}
-        return win;
-    },
-});
-
-// Randomize canvas fingerprint (very subtle)
-const _origGetImageData = CanvasRenderingContext2D.prototype.getImageData;
-CanvasRenderingContext2D.prototype.getImageData = function(x, y, w, h) {
-    const data = _origGetImageData.call(this, x, y, w, h);
-    for (let i = 0; i < data.data.length; i += 4) {
-        data.data[i]     += Math.floor(Math.random() * 3) - 1;
-        data.data[i + 1] += Math.floor(Math.random() * 3) - 1;
-        data.data[i + 2] += Math.floor(Math.random() * 3) - 1;
-    }
-    return data;
-};
+window.chrome = { runtime: {}, loadTimes: () => ({}), csi: () => ({}), app: {} };
 """
 
-# Persistent user data directory — stores cookies, localStorage, etc.
+# Persistent profile untuk simpan cookies cf_clearance
 USER_DATA_DIR = Path(settings.data_dir) / "browser_profile"
+
+# Resource types yang diblok saat scraping (BUKAN saat warmup)
+BLOCKED_RESOURCES = {"image", "font", "media", "stylesheet"}
 
 
 class StealthBrowser:
     """
-    Manages a single stealth Playwright Chromium instance with
-    PERSISTENT browser context (user data directory).
-
-    Features:
-    - Anti-detection JS injection
-    - Persistent cookie storage (cf_clearance survives restarts)
-    - Randomized viewport & user-agent
-    - Resource blocking (images/fonts) for speed
-    - Human-like interactions
-    - Warm-up status tracking
+    Stealth Playwright Chromium dengan persistent context.
+    Cookie cf_clearance tersimpan otomatis dan bertahan antar restart.
     """
 
     def __init__(self) -> None:
         self._playwright: Optional[Playwright] = None
-        self._browser: Optional[Browser] = None
         self._context: Optional[BrowserContext] = None
         self._user_agent: str = get_random_user_agent()
         self._ready = False
-
-        # Warm-up state (tracked for the frontend)
-        self._warmup_status: str = "idle"  # idle | warming | challenge | solved | failed
+        self._warmup_status: str = "idle"
         self._warmup_page: Optional[Page] = None
+        self._is_warmup_mode: bool = False  # flag untuk disable resource blocking
 
     @property
     def is_ready(self) -> bool:
@@ -137,19 +95,28 @@ class StealthBrowser:
     # ─── Lifecycle ────────────────────────────────────────────────────────────
 
     async def start(self) -> None:
-        """Launch Chromium with stealth configuration and persistent context."""
+        """Launch Chromium dengan stealth config dan persistent context."""
         USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Tambahkan args khusus Docker jika headless
+        args = list(CHROMIUM_ARGS)
+        if settings.headless:
+            args += [
+                "--disable-gpu",
+                "--single-process",  # lebih stabil di Docker
+            ]
+
         log.info(
             "Launching Chromium | headless={} | profile={} | ua={:.50s}…",
             settings.headless, USER_DATA_DIR, self._user_agent,
         )
+
         self._playwright = await async_playwright().start()
 
-        # Use launchPersistentContext for cookie persistence
         self._context = await self._playwright.chromium.launch_persistent_context(
             user_data_dir=str(USER_DATA_DIR),
             headless=settings.headless,
-            args=CHROMIUM_ARGS,
+            args=args,
             user_agent=self._user_agent,
             viewport={
                 "width": random.randint(1280, 1920),
@@ -165,62 +132,72 @@ class StealthBrowser:
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             },
-            # Increase default timeouts
             timeout=settings.browser_timeout,
         )
 
-        # Inject stealth on every new page
+        # Inject stealth script di setiap halaman baru
         await self._context.add_init_script(STEALTH_SCRIPT)
 
-        # Block heavy resources for speed (but NOT on warm-up pages)
-        await self._context.route(
-            "**/*.{png,jpg,jpeg,gif,svg,woff,woff2,ttf,otf,ico}",
-            lambda route: route.abort(),
-        )
+        # Resource blocking — skip jika sedang warmup (CF butuh semua resource)
+        async def _route_handler(route):
+            if self._is_warmup_mode:
+                await route.continue_()
+                return
+            if route.request.resource_type in BLOCKED_RESOURCES:
+                await route.abort()
+            else:
+                await route.continue_()
+
+        await self._context.route("**/*", _route_handler)
 
         self._ready = True
         log.success("Stealth browser ready (persistent context)")
 
     async def stop(self) -> None:
-        """Gracefully close everything."""
+        """Graceful shutdown."""
+        self._ready = False
         if self._warmup_page:
             try:
                 await self._warmup_page.close()
             except Exception:
                 pass
         if self._context:
-            await self._context.close()
+            try:
+                await self._context.close()
+            except Exception:
+                pass
         if self._playwright:
-            await self._playwright.stop()
-        self._ready = False
+            try:
+                await self._playwright.stop()
+            except Exception:
+                pass
         log.info("Browser closed")
 
     # ─── Page Management ──────────────────────────────────────────────────────
 
     async def new_page(self) -> Page:
-        """Create a new stealth page."""
+        """Buat halaman baru dengan stealth."""
         if not self._context:
-            raise RuntimeError("Browser not started — call start() first")
+            raise RuntimeError("Browser belum distart — panggil start() dulu")
         page = await self._context.new_page()
         page.set_default_timeout(settings.browser_timeout)
         page.set_default_navigation_timeout(settings.browser_timeout)
         return page
 
-    # ─── Warm-Up (Cloudflare) ─────────────────────────────────────────────────
+    # ─── Warm-Up (Cloudflare Bypass) ─────────────────────────────────────────
 
     async def warmup(self) -> bool:
         """
-        Navigate to the target site homepage in a visible browser tab.
-        If Cloudflare Turnstile appears, the user manually solves it.
-        Cookies are persisted automatically via the persistent context.
-        Returns True when the challenge is solved or no challenge exists.
+        Buka halaman target di Chromium.
+        Jika ada Cloudflare Turnstile, user solve manual di jendela yang muncul.
+        Cookie disimpan otomatis via persistent context.
         """
         self._warmup_status = "warming"
+        self._is_warmup_mode = True  # disable resource blocking saat warmup
         target = settings.direktori_url
         log.info("Warm-up: navigating to {}", target)
 
         try:
-            # Close existing warm-up page if any
             if self._warmup_page:
                 try:
                     await self._warmup_page.close()
@@ -229,52 +206,49 @@ class StealthBrowser:
 
             self._warmup_page = await self.new_page()
 
-            response = await self._warmup_page.goto(
+            await self._warmup_page.goto(
                 target,
                 wait_until="domcontentloaded",
                 timeout=settings.browser_timeout,
             )
 
-            # Check for Cloudflare challenge
             html = await self._warmup_page.content()
             if self._is_cloudflare_challenge(html):
                 self._warmup_status = "challenge"
                 log.warning(
-                    "Cloudflare Turnstile detected! User needs to solve "
-                    "the challenge in the Chromium window."
+                    "Cloudflare Turnstile terdeteksi! "
+                    "Selesaikan verifikasi di jendela Chromium."
                 )
-                # Don't wait here — return immediately.
-                # The frontend will poll /api/warmup-status
+                # Jangan tunggu — return, frontend akan poll /api/warmup-status
                 return False
             else:
                 self._warmup_status = "solved"
-                log.success("No challenge — direct access OK. Warm-up complete!")
+                self._is_warmup_mode = False
+                log.success("Tidak ada challenge — akses langsung OK!")
                 return True
 
         except Exception as exc:
-            log.error("Warm-up navigation error: {}", exc)
+            log.error("Warm-up error: {}", exc)
             self._warmup_status = "failed"
+            self._is_warmup_mode = False
             return False
 
     async def check_warmup_solved(self) -> bool:
         """
-        Check if the Cloudflare challenge has been solved.
-        Called periodically by the frontend via /api/warmup-status.
+        Cek apakah Cloudflare challenge sudah di-solve user.
+        Dipanggil oleh frontend polling /api/warmup-status.
         """
         if self._warmup_status == "solved":
             return True
-
         if not self._warmup_page:
             return False
 
         try:
             html = await self._warmup_page.content()
-
             if not self._is_cloudflare_challenge(html):
-                # Challenge is solved!
                 self._warmup_status = "solved"
-                log.success("Cloudflare challenge solved! Cookies saved.")
-                # Close the warm-up page to save resources
+                self._is_warmup_mode = False
+                log.success("Challenge solved! Cookie cf_clearance tersimpan.")
                 try:
                     await self._warmup_page.close()
                 except Exception:
@@ -282,23 +256,22 @@ class StealthBrowser:
                 self._warmup_page = None
                 return True
         except Exception as exc:
-            log.debug("Warm-up check error: {}", exc)
+            log.debug("Warmup check error: {}", exc)
 
         return False
 
     @staticmethod
     def _is_cloudflare_challenge(html: str) -> bool:
-        """Check if the HTML contains a Cloudflare challenge page."""
         lower = html.lower()
         return any(marker in lower for marker in [
             "cf-turnstile", "verify you are human", "just a moment",
             "checking your browser", "cf_chl_opt", "cf-challenge-running",
         ])
 
-    # ─── Cookie Inspection ────────────────────────────────────────────────────
+    # ─── Cookie Check ─────────────────────────────────────────────────────────
 
     async def has_cf_clearance(self) -> bool:
-        """Check if cf_clearance cookie exists in the persistent context."""
+        """Cek apakah cookie cf_clearance sudah ada."""
         if not self._context:
             return False
         try:
@@ -310,7 +283,6 @@ class StealthBrowser:
     # ─── Human Simulation ─────────────────────────────────────────────────────
 
     async def human_scroll(self, page: Page, scrolls: int = 3) -> None:
-        """Scroll the page naturally to mimic reading behaviour."""
         vp = page.viewport_size or {"width": 1280, "height": 800}
         for _ in range(scrolls):
             amount = random.randint(
@@ -325,7 +297,6 @@ class StealthBrowser:
             )
 
     async def random_mouse(self, page: Page, moves: int = 3) -> None:
-        """Move mouse randomly across the viewport."""
         vp = page.viewport_size or {"width": 1280, "height": 800}
         for _ in range(moves):
             x = random.randint(100, vp["width"] - 100)
