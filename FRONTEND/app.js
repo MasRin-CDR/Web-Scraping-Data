@@ -3,8 +3,15 @@
 /* ============================================================
    CONFIG
    ============================================================ */
-const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = IS_LOCAL ? window.location.origin + '/api' : '';
+const API_CANDIDATES = [
+  window.MAHKAMAH_API_BASE,
+  window.location.protocol === 'file:' ? null : `${window.location.origin}/api`,
+  'http://127.0.0.1:8000/api',
+  'http://localhost:8000/api',
+].filter(Boolean).map(url => url.replace(/\/$/, ''));
+
+let API_BASE = API_CANDIDATES[0] || 'http://127.0.0.1:8000/api';
+let backendReady = false;
 
 /* ============================================================
    DATA
@@ -79,11 +86,45 @@ const DOM = {
    API HELPERS
    ============================================================ */
 async function apiPost(endpoint, body) {
+  await ensureBackend();
   const res = await fetch(`${API_BASE}${endpoint}`, {
     method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`API error ${res.status}`);
+  if (!isJsonResponse(res)) throw new Error('Backend FastAPI tidak ditemukan');
   return res.json();
+}
+
+function isJsonResponse(res) {
+  return (res.headers.get('content-type') || '').includes('application/json');
+}
+
+async function fetchJson(endpoint, options) {
+  const res = await fetch(`${API_BASE}${endpoint}`, options);
+  if (!res.ok || !isJsonResponse(res)) throw new Error(`API unavailable at ${API_BASE}`);
+  return res.json();
+}
+
+async function detectBackend() {
+  for (const base of API_CANDIDATES) {
+    try {
+      const res = await fetch(`${base}/health`, { cache: 'no-store' });
+      if (res.ok && isJsonResponse(res)) {
+        API_BASE = base;
+        backendReady = true;
+        return true;
+      }
+    } catch (_) { /* try next candidate */ }
+  }
+  backendReady = false;
+  return false;
+}
+
+async function ensureBackend() {
+  if (backendReady) return true;
+  const ok = await detectBackend();
+  if (!ok) throw new Error('Backend FastAPI belum aktif. Jalankan server di localhost:8000.');
+  return true;
 }
 
 /* ============================================================
@@ -452,8 +493,8 @@ async function startWarmup() {
   btn.querySelector('.warmup-btn-loader').style.display='inline-flex';
   btn.disabled = true;
   try {
-    const res = await fetch(`${API_BASE}/warmup`, {method:'POST'});
-    const data = await res.json();
+    await ensureBackend();
+    const data = await fetchJson('/warmup', {method:'POST'});
     updateWarmupUI(data.status);
     if (data.status === 'challenge') {
       showToast('Selesaikan verifikasi di jendela Chromium yang muncul!','warning');
@@ -462,8 +503,8 @@ async function startWarmup() {
       showToast('Verifikasi berhasil!','success');
     }
   } catch(err) {
-    updateWarmupUI('failed');
-    showToast('Gagal memulai verifikasi: '+err.message,'error');
+    updateWarmupUI('demo');
+    showToast(err.message,'error');
   }
   btn.querySelector('.warmup-btn-text').style.display='';
   btn.querySelector('.warmup-btn-loader').style.display='none';
@@ -474,8 +515,7 @@ function startWarmupPolling() {
   if (warmupPollTimer) clearInterval(warmupPollTimer);
   warmupPollTimer = setInterval(async () => {
     try {
-      const res = await fetch(`${API_BASE}/warmup-status`);
-      const data = await res.json();
+      const data = await fetchJson('/warmup-status');
       updateWarmupUI(data.status);
       if (data.status === 'solved') {
         clearInterval(warmupPollTimer);
@@ -496,7 +536,7 @@ function updateWarmupUI(status) {
     challenge: {icon:'⚠️', title:'Selesaikan Verifikasi Cloudflare',   desc:'Buka jendela Chromium yang muncul dan klik checkbox verifikasi.', btnText:'Menunggu…', btnClass:''},
     solved:    {icon:'✅', title:'Verifikasi Berhasil',                 desc:'Anda sudah terverifikasi. Silakan mulai pencarian.',        btnText:'Terverifikasi',    btnClass:'solved-btn'},
     failed:    {icon:'❌', title:'Verifikasi Gagal',                    desc:'Terjadi kesalahan. Silakan coba lagi.',                    btnText:'Coba Lagi',        btnClass:''},
-    demo:      {icon:'🌐', title:'Mode Demo — Frontend Only',          desc:'Dashboard ini memerlukan backend FastAPI. Jalankan server di localhost:8000 untuk pencarian live.', btnText:'Info', btnClass:''},
+    demo:      {icon:'🌐', title:'Backend Belum Terhubung',            desc:'Jalankan backend FastAPI di localhost:8000, lalu muat ulang halaman untuk pencarian live.', btnText:'Cek Lagi', btnClass:''},
   };
   const c = cfg[status] || cfg.idle;
   DOM.warmupIcon.textContent = c.icon;
@@ -508,14 +548,13 @@ function updateWarmupUI(status) {
 }
 
 async function checkInitialWarmup() {
-  if (!IS_LOCAL) {
-    // Vercel static deploy — no backend available
+  const detected = await detectBackend();
+  if (!detected) {
     updateWarmupUI('demo');
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/warmup-status`);
-    const data = await res.json();
+    const data = await fetchJson('/warmup-status');
     updateWarmupUI(data.cf_clearance ? 'solved' : data.status);
     if (data.status === 'challenge') startWarmupPolling();
   } catch(e) { updateWarmupUI('idle'); }
@@ -527,19 +566,11 @@ async function checkInitialWarmup() {
 function init() {
   initTheme(); initDropdowns(); initKeyword(); initSorting(); initRealtimeSearch();
   DOM.searchBtn.addEventListener('click', () => {
-    if (!IS_LOCAL) {
-      showToast('Mode demo — jalankan backend lokal untuk pencarian live','warning');
-      return;
-    }
     triggerSearch();
   });
   DOM.resetBtn.addEventListener('click', resetFilter);
   DOM.downloadAllBtn.addEventListener('click', exportCSV);
   DOM.warmupBtn.addEventListener('click', () => {
-    if (!IS_LOCAL) {
-      showToast('Mode demo — jalankan backend di localhost:8000','warning');
-      return;
-    }
     startWarmup();
   });
   DOM.modalClose.addEventListener('click', closeModal);

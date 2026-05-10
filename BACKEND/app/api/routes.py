@@ -51,7 +51,11 @@ async def warmup():
     log.info("API /warmup | Starting warm-up process")
 
     if not browser_manager.is_ready:
-        raise HTTPException(status_code=503, detail="Browser not ready")
+        try:
+            await browser_manager.start()
+        except Exception as exc:
+            log.exception("Browser startup failed during warm-up: {}", exc)
+            raise HTTPException(status_code=503, detail=f"Browser not ready: {exc}")
 
     # Check if already warmed up
     has_cf = await browser_manager.has_cf_clearance()

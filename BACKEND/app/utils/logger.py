@@ -31,7 +31,7 @@ def setup_logger(name: str = "mahkamah") -> "logger":
         format=fmt_console,
         level=settings.log_level,
         colorize=True,
-        enqueue=True,
+        enqueue=False,
     )
 
     # Main log file
@@ -42,7 +42,7 @@ def setup_logger(name: str = "mahkamah") -> "logger":
         rotation="10 MB",
         retention="30 days",
         compression="zip",
-        enqueue=True,
+        enqueue=False,
         encoding="utf-8",
     )
 
@@ -54,7 +54,7 @@ def setup_logger(name: str = "mahkamah") -> "logger":
         rotation="5 MB",
         retention="60 days",
         compression="zip",
-        enqueue=True,
+        enqueue=False,
         encoding="utf-8",
     )
 
