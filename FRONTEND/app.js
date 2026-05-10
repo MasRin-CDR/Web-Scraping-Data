@@ -17,36 +17,54 @@ let backendReady = false;
    DATA
    ============================================================ */
 const LOKASI_LIST = [
-  'Mahkamah Agung RI, Jakarta',
-  'PN Jakarta Pusat','PN Jakarta Selatan','PN Jakarta Utara','PN Jakarta Barat','PN Jakarta Timur',
-  'PN Bandung','PN Bekasi','PN Depok','PN Bogor','PN Tangerang','PN Tangerang Selatan',
-  'PN Surabaya','PN Malang','PN Sidoarjo','PN Gresik','PN Pasuruan',
-  'PN Semarang','PN Yogyakarta','PN Klaten','PN Solo',
-  'PN Medan','PN Deli Serdang','PN Binjai','PN Pematangsiantar',
-  'PN Makassar','PN Gowa','PN Maros',
-  'PN Palembang','PN Prabumulih',
-  'PN Pekanbaru','PN Dumai',
-  'PN Banjarmasin','PN Banjarbaru',
-  'PN Balikpapan','PN Samarinda','PN Kutai Kartanegara',
-  'PN Manado','PN Bitung',
-  'PN Denpasar','PN Badung','PN Gianyar',
-  'PN Padang','PN Bukittinggi',
-  'PN Pontianak','PN Singkawang',
-  'PN Jambi','PN Muara Bungo',
-  'PN Kupang','PN Ende',
-  'PN Mataram','PN Selong',
-  'PN Ambon','PN Ternate',
-  'PN Jayapura','PN Sorong','PN Merauke',
-  'PN Bengkulu','PN Kepahiang',
-  'PN Serang','PN Cilegon',
-  'PN Gorontalo','PN Limboto',
-  'PN Kendari','PN Baubau',
-  'PN Palu','PN Poso',
-  'PN Mamuju','PN Polewali',
-  'PN Tanjungpinang','PN Batam',
-  'PA Jakarta Pusat','PA Jakarta Selatan','PA Bandung','PA Surabaya','PA Makassar',
-  'PTUN Jakarta','PTUN Bandung','PTUN Surabaya','PTUN Medan','PTUN Makassar',
-  'Dilmil I-02 Medan','Dilmil II-08 Jakarta','Dilmil II-09 Bandung','Dilmil III-14 Makassar',
+  'MAHKAMAH AGUNG',
+  'PENGADILAN PAJAK',
+  'PN AIRMADIDI','PN AMBON','PN AMLAPURA','PN AMUNTAI','PN AMURANG','PN ANDOOLO','PN ARGA MAKMUR','PN ATAMBUA',
+  'PN BAJAWA','PN BALE BANDUNG','PN BALIGE','PN BALIKPAPAN','PN BANDA ACEH','PN BANDUNG','PN BANGIL','PN BANGKALAN',
+  'PN BANGKINANG','PN BANGKO','PN BANGLI','PN BANJARBARU','PN BANJARMASIN','PN BANJARNEGARA','PN BANTAENG','PN BANTUL',
+  'PN BANYUMAS','PN BANYUWANGI','PN BARABAI','PN BARRU','PN BATAM','PN BATANG','PN BATULICIN','PN BATURAJA',
+  'PN BATUSANGKAR','PN BAUBAU','PN BEKASI','PN BENGKALIS','PN BENGKAYANG','PN BENGKULU','PN BIAK','PN BINJAI',
+  'PN BIREUEN','PN BITUNG','PN BLAMBANGAN UMPU','PN BLANGKAJEREN','PN BLITAR','PN BLORA','PN BOGOR','PN BOJONEGORO',
+  'PN BONDOWOSO','PN BONTANG','PN CIANJUR','PN CILEGON','PN CIREBON','PN DELI SERDANG','PN DENPASAR','PN DEPOK',
+  'PN DUMAI','PN ENDE','PN GIANYAR','PN GORONTALO','PN GOWA','PN GRESIK','PN JAKARTA BARAT','PN JAKARTA PUSAT',
+  'PN JAKARTA SELATAN','PN JAKARTA TIMUR','PN JAKARTA UTARA','PN JAMBI','PN JAYAPURA','PN KENDARI','PN KEPAHIANG',
+  'PN KLATEN','PN KOTA AGUNG','PN KUPANG','PN KUTAI KARTANEGARA','PN MALANG','PN MAMUJU','PN MANADO','PN MAROS',
+  'PN MARTAPURA','PN MATARAM','PN MEDAN','PN MERAUKE','PN MOJOKERTO','PN MUARA BUNGO','PN NEGARA','PN PADANG',
+  'PN PALEMBANG','PN PALU','PN PASURUAN','PN PEKANBARU','PN PELAIHARI','PN PEMATANGSIANTAR','PN PONTIANAK',
+  'PN POSO','PN PRABUMULIH','PN PURBALINGGA','PN RANTAU PRAPAT','PN SALATIGA','PN SAMARINDA','PN SAMPIT',
+  'PN SANGATTA','PN SEMARANG','PN SERANG','PN SIDOARJO','PN SINGARAJA','PN SINGKAWANG','PN SOLO','PN SORONG',
+  'PN SRAGEN','PN SUKABUMI','PN SURABAYA','PN SURAKARTA','PN TANGERANG','PN TANGERANG SELATAN','PN TANJUNGPINANG',
+  'PN TASIKMALAYA','PN TERNATE','PN WATES','PN WONOSOBO','PN YOGYAKARTA',
+  'MS BANDA ACEH','MS BIREUEN','MS BLANGKAJEREN','MS BLANGPIDIE','MS CALANG','MS IDI','MS JANTHO','MS KUALA SIMPANG',
+  'MS KUTACANE','MS KOTA SUBULUSSALAM','MS LANGSA','MS LHOK SEUMAWE','MS LHOK SUKON','MS MEULABOH','MS MEUREUDU',
+  'MS PROP NAD','MS SABANG','MS SIGLI','MS SINABANG','MS SINGKIL','MS SIMPANG TIGA REDELONG','MS SUKA MAKMUE',
+  'MS TAKENGON','MS TAPAK TUAN',
+  'PA AMBARAWA','PA AMBON','PA AMUNTAI','PA AMURANG','PA ANDOOLO','PA ARGAMAKMUR','PA ARSO','PA ATAMBUA',
+  'PA AMPANA','PA BADUNG','PA BAJAWA','PA BALIGE','PA BALIKPAPAN','PA BANDUNG','PA BANGGAI','PA BANGIL',
+  'PA BANGKALAN','PA BANGKINANG','PA BANGKO','PA BANGLI','PA BANJARBARU','PA BANJARMASIN','PA BANJARNEGARA',
+  'PA BANTAENG','PA BANTUL','PA BANYUMAS','PA BANYUWANGI','PA BATUSANGKAR','PA JAKARTA BARAT','PA JAKARTA PUSAT',
+  'PA JAKARTA SELATAN','PA KAB MALANG','PA KALIANDA','PA MAKASSAR','PA PAINAN','PA PASIR PANGARAYAN','PA PEKANBARU',
+  'PA PELAIHARI','PA RAHA','PA SEMARANG','PA SIDENRENG RAPPANG','PA SINGKAWANG','PA SURABAYA','PA TIGARAKSA',
+  'PA WONOSARI',
+  'PT BANDA ACEH','PT BANDUNG','PT BANTEN','PT BENGKULU','PT DENPASAR','PT JAMBI','PT JAKARTA','PT KEPULAUAN RIAU',
+  'PT KUPANG','PT MAKASSAR','PT MANADO','PT MATARAM','PT MEDAN','PT PADANG','PT PALEMBANG','PT PEKANBARU',
+  'PT PONTIANAK','PT SAMARINDA','PT SEMARANG','PT SURABAYA','PT TANJUNG KARANG','PT YOGYAKARTA',
+  'PTA AMBON','PTA BANDA ACEH','PTA BANDUNG','PTA BANJARMASIN','PTA BENGKULU','PTA JAMBI','PTA JAYAPURA',
+  'PTA KENDARI','PTA KUPANG','PTA MAKASSAR','PTA MALUKU UTARA','PTA MANADO','PTA MATARAM','PTA MEDAN',
+  'PTA PALU','PTA PEKANBARU','PTA SAMARINDA','PTA SEMARANG','PTA SURABAYA','PTA YOGYAKARTA',
+  'PTUN AMBON','PTUN BANDA ACEH','PTUN BANDAR LAMPUNG','PTUN BANDUNG','PTUN BANJARMASIN','PTUN BENGKULU',
+  'PTUN DENPASAR','PTUN GORONTALO','PTUN JAKARTA','PTUN JAMBI','PTUN JAYAPURA','PTUN KENDARI','PTUN KUPANG',
+  'PTUN MAKASSAR','PTUN MANADO','PTUN MATARAM','PTUN MEDAN','PTUN PADANG','PTUN PALANGKARAYA','PTUN PALEMBANG',
+  'PTUN PALU','PTUN PEKAN BARU','PTUN PONTIANAK','PTUN PANGKAL PINANG','PTUN SAMARINDA','PTUN SEMARANG',
+  'PTUN SERANG','PTUN SURABAYA','PTUN TANJUNG PINANG','PTUN YOGYAKARTA',
+  'PTTUN BANJARMASIN','PTTUN JAKARTA','PTTUN MAKASSAR','PTTUN MANADO','PTTUN MATARAM','PTTUN MEDAN',
+  'PTTUN PALEMBANG','PTTUN SURABAYA',
+  'DILMILTAMA','DILMILTI I MEDAN','DILMILTI II JAKARTA','DILMILTI III SURABAYA',
+  'DILMIL I 01 BANDA ACEH','DILMIL I 02 MEDAN','DILMIL I 03 PADANG','DILMIL I 04 PALEMBANG',
+  'DILMIL I 05 PONTIANAK','DILMIL I 06 BANJARMASIN','DILMIL I 07 BALIKPAPAN','DILMIL II 08 JAKARTA',
+  'DILMIL II 09 BANDUNG','DILMIL II 10 SEMARANG','DILMIL II 11 YOGYAKARTA','DILMIL III 12 SURABAYA',
+  'DILMIL III 13 MADIUN','DILMIL III 14 DENPASAR','DILMIL III 15 KUPANG','DILMIL III 16 MAKASSAR',
+  'DILMIL III 17 MANADO','DILMIL III 18 AMBON','DILMIL III 19 JAYAPURA',
 ];
 const JENIS_LIST = ['Mahkamah Agung','Peradilan Umum','Peradilan Agama','Peradilan Tata Usaha Negara','Peradilan Militer'];
 
@@ -123,7 +141,7 @@ async function detectBackend() {
 async function ensureBackend() {
   if (backendReady) return true;
   const ok = await detectBackend();
-  if (!ok) throw new Error('Backend FastAPI belum aktif. Jalankan server di localhost:8000.');
+  if (!ok) throw new Error('API FastAPI belum terhubung untuk pencarian live.');
   return true;
 }
 
@@ -145,37 +163,90 @@ function setTheme(t) {
    DROPDOWNS
    ============================================================ */
 function buildDropdown(items, dropdownEl, inputEl, wrapperEl, onSelect) {
-  function render(filter='') {
+  let activeIndex = -1;
+  let filteredItems = [];
+
+  function render(filter='', keepActive=false) {
     const q = filter.toLowerCase().trim();
     const f = q ? items.filter(i => i.toLowerCase().includes(q)) : items;
+    filteredItems = f.slice(0, 120);
+    if (!keepActive) activeIndex = filteredItems.findIndex(i => i === inputEl._selected);
     dropdownEl.innerHTML = '';
     if (!f.length) { dropdownEl.innerHTML = '<div class="dropdown-no-result">Tidak ditemukan</div>'; return; }
-    f.forEach(item => {
+    filteredItems.forEach((item, idx) => {
       const div = document.createElement('div');
-      div.className = 'dropdown-item' + (item === inputEl._selected ? ' selected' : '');
-      div.setAttribute('role','option'); div.textContent = item;
-      div.addEventListener('mousedown', e => {
-        e.preventDefault(); inputEl._selected = item; inputEl.value = item;
-        close(); onSelect(item);
+      div.className = 'dropdown-item' + (item === inputEl._selected ? ' selected' : '') + (idx === activeIndex ? ' highlighted' : '');
+      div.setAttribute('role','option');
+      div.setAttribute('aria-selected', item === inputEl._selected ? 'true' : 'false');
+      div.textContent = item;
+      div.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        select(item);
       });
       dropdownEl.appendChild(div);
     });
+    if (f.length > filteredItems.length) {
+      const more = document.createElement('div');
+      more.className = 'dropdown-no-result';
+      more.textContent = `${f.length - filteredItems.length} lainnya - ketik untuk mempersempit`;
+      dropdownEl.appendChild(more);
+    }
   }
-  function open() { wrapperEl.classList.add('open'); render(inputEl.value); if(inputEl.readOnly){inputEl.value='';inputEl.readOnly=false;} }
-  function close() { wrapperEl.classList.remove('open'); if(!inputEl._selected) inputEl.value = inputEl._selected || ''; }
+  function select(item) {
+    inputEl._selected = item;
+    inputEl.value = item;
+    close();
+    onSelect(item);
+  }
+  function open() {
+    if (window.activeDropdownClose && window.activeDropdownClose !== close) window.activeDropdownClose();
+    window.activeDropdownClose = close;
+    wrapperEl.classList.add('open');
+    inputEl.setAttribute('aria-expanded', 'true');
+    if (inputEl.readOnly) inputEl.readOnly = false;
+    render(inputEl.value);
+  }
+  function close() {
+    wrapperEl.classList.remove('open');
+    inputEl.setAttribute('aria-expanded', 'false');
+    if (!inputEl.value.trim()) inputEl._selected = '';
+    if (window.activeDropdownClose === close) window.activeDropdownClose = null;
+  }
+  function move(delta) {
+    if (!wrapperEl.classList.contains('open')) open();
+    if (!filteredItems.length) return;
+    activeIndex = (activeIndex + delta + filteredItems.length) % filteredItems.length;
+    render(inputEl.value, true);
+    const activeEl = dropdownEl.querySelectorAll('.dropdown-item')[activeIndex];
+    activeEl?.scrollIntoView({ block: 'nearest' });
+  }
   inputEl.addEventListener('focus', open);
-  inputEl.addEventListener('input', () => render(inputEl.value));
-  inputEl.addEventListener('blur', () => setTimeout(close, 150));
+  inputEl.addEventListener('input', () => {
+    inputEl._selected = '';
+    open();
+    render(inputEl.value);
+  });
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Enter' && wrapperEl.classList.contains('open') && filteredItems[activeIndex]) {
+      e.preventDefault();
+      select(filteredItems[activeIndex]);
+    } else if (e.key === 'Escape') {
+      close();
+      inputEl.blur();
+    }
+  });
+  document.addEventListener('pointerdown', e => {
+    if (!wrapperEl.contains(e.target)) close();
+  });
   inputEl._selected = '';
-  if (inputEl.readOnly) inputEl.addEventListener('click', open);
+  inputEl.setAttribute('aria-expanded', 'false');
+  inputEl.addEventListener('click', open);
 }
 function initDropdowns() {
   buildDropdown(LOKASI_LIST, DOM.lokasiDropdown, DOM.lokasiInput, DOM.lokasiWrapper, v => { state.selectedLokasi = v; });
-  buildDropdown(JENIS_LIST, DOM.jenisDropdown, DOM.jenisInput, DOM.jenisWrapper, v => { state.selectedJenis = v; DOM.jenisInput.readOnly = true; });
-  DOM.jenisInput.addEventListener('click', () => {
-    DOM.jenisWrapper.classList.toggle('open');
-    if (DOM.jenisWrapper.classList.contains('open')) DOM.jenisDropdown.style.display = 'block';
-  });
+  buildDropdown(JENIS_LIST, DOM.jenisDropdown, DOM.jenisInput, DOM.jenisWrapper, v => { state.selectedJenis = v; });
 }
 
 /* ============================================================
@@ -536,7 +607,7 @@ function updateWarmupUI(status) {
     challenge: {icon:'⚠️', title:'Selesaikan Verifikasi Cloudflare',   desc:'Buka jendela Chromium yang muncul dan klik checkbox verifikasi.', btnText:'Menunggu…', btnClass:''},
     solved:    {icon:'✅', title:'Verifikasi Berhasil',                 desc:'Anda sudah terverifikasi. Silakan mulai pencarian.',        btnText:'Terverifikasi',    btnClass:'solved-btn'},
     failed:    {icon:'❌', title:'Verifikasi Gagal',                    desc:'Terjadi kesalahan. Silakan coba lagi.',                    btnText:'Coba Lagi',        btnClass:''},
-    demo:      {icon:'🌐', title:'Backend Belum Terhubung',            desc:'Jalankan backend FastAPI di localhost:8000, lalu muat ulang halaman untuk pencarian live.', btnText:'Cek Lagi', btnClass:''},
+    demo:      {icon:'🌐', title:'Mode Online Statis',                 desc:'Dropdown dan filter siap digunakan. Pencarian live aktif saat API FastAPI tersedia.', btnText:'Cek API', btnClass:''},
   };
   const c = cfg[status] || cfg.idle;
   DOM.warmupIcon.textContent = c.icon;

@@ -458,8 +458,10 @@ body {
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-hover);
-  max-height: 220px;
+  max-height: min(320px, 42vh);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   z-index: 200;
   display: none;
   animation: dropdownIn var(--transition) both;

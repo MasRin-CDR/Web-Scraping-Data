@@ -6,6 +6,9 @@ Includes warm-up endpoints for Cloudflare Turnstile bypass.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response, StreamingResponse
 
@@ -183,41 +186,21 @@ async def download_pdf(url: str = Query(..., description="PDF URL to download"))
 @router.get("/lokasi")
 async def get_lokasi_list():
     """Return the full list of court locations for the frontend dropdown."""
-    lokasi = [
-        "Mahkamah Agung RI, Jakarta",
-        "PN Jakarta Pusat", "PN Jakarta Selatan", "PN Jakarta Utara",
-        "PN Jakarta Barat", "PN Jakarta Timur",
-        "PN Bandung", "PN Bekasi", "PN Depok", "PN Bogor",
-        "PN Tangerang", "PN Tangerang Selatan",
-        "PN Surabaya", "PN Malang", "PN Sidoarjo", "PN Gresik", "PN Pasuruan",
-        "PN Semarang", "PN Yogyakarta", "PN Klaten", "PN Solo",
-        "PN Medan", "PN Deli Serdang", "PN Binjai", "PN Pematangsiantar",
-        "PN Makassar", "PN Gowa", "PN Maros",
-        "PN Palembang", "PN Prabumulih",
-        "PN Pekanbaru", "PN Dumai",
-        "PN Banjarmasin", "PN Banjarbaru",
-        "PN Balikpapan", "PN Samarinda", "PN Kutai Kartanegara",
-        "PN Manado", "PN Bitung",
-        "PN Denpasar", "PN Badung", "PN Gianyar",
-        "PN Padang", "PN Bukittinggi",
-        "PN Pontianak", "PN Singkawang",
-        "PN Jambi", "PN Muara Bungo",
-        "PN Kupang", "PN Ende",
-        "PN Mataram", "PN Selong",
-        "PN Ambon", "PN Ternate",
-        "PN Jayapura", "PN Sorong", "PN Merauke",
-        "PN Bengkulu", "PN Kepahiang",
-        "PN Serang", "PN Cilegon",
-        "PN Gorontalo", "PN Limboto",
-        "PN Kendari", "PN Baubau",
-        "PN Palu", "PN Poso",
-        "PN Mamuju", "PN Polewali",
-        "PN Tanjungpinang", "PN Batam",
-        "PA Jakarta Pusat", "PA Jakarta Selatan", "PA Bandung",
-        "PA Surabaya", "PA Makassar",
-        "PTUN Jakarta", "PTUN Bandung", "PTUN Surabaya",
-        "PTUN Medan", "PTUN Makassar",
-        "Dilmil I-02 Medan", "Dilmil II-08 Jakarta",
-        "Dilmil II-09 Bandung", "Dilmil III-14 Makassar",
-    ]
+    lokasi = _load_frontend_lokasi_list()
     return {"data": lokasi, "total": len(lokasi)}
+
+
+def _load_frontend_lokasi_list() -> list[str]:
+    """Keep the API location list in sync with the static dashboard list."""
+    frontend_js = Path(__file__).resolve().parents[3] / "FRONTEND" / "app.js"
+    fallback = ["MAHKAMAH AGUNG", "PENGADILAN PAJAK"]
+    try:
+        text = frontend_js.read_text(encoding="utf-8")
+        match = re.search(r"const\s+LOKASI_LIST\s*=\s*\[(.*?)\];", text, re.S)
+        if not match:
+            return fallback
+        items = re.findall(r"'([^']+)'", match.group(1))
+        return sorted(dict.fromkeys(items), key=str.casefold)
+    except Exception as exc:
+        log.warning("Failed loading frontend lokasi list: {}", exc)
+        return fallback
