@@ -135,8 +135,8 @@ Web-Scraping-Data/
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/MasRin-CDR/Web-Scaping-Data.git
-cd Web-Scaping-Data
+git clone https://github.com/MasRin-CDR/Web-Scraping-Data.git
+cd Web-Scraping-Data
 ```
 
 ### 2. Setup Environment
@@ -201,13 +201,13 @@ http://127.0.0.1:8000
 
 ```bash
 # Build & run
-docker-compose up --build -d
+docker compose up --build -d
 
 # View logs
-docker-compose logs -f scraper-api
+docker compose logs -f scraper
 
 # Stop
-docker-compose down
+docker compose down
 ```
 
 ### Manual Deployment
@@ -285,8 +285,8 @@ Solusi: Klik "Mulai Verifikasi" di dashboard dan selesaikan
 # Re-install Playwright browser
 python -m playwright install chromium
 
-# Install system dependencies (Linux)
-python -m playwright install-deps
+# Catatan: install-deps tidak diperlukan jika menggunakan Docker
+# Dependency sistem sudah diinstall via apt di Dockerfile
 ```
 
 ### Port Already In Use
