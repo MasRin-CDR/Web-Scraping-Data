@@ -3,14 +3,16 @@
 /* ============================================================
    CONFIG
    ============================================================ */
+const IS_LOCAL_HOST = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+const IS_FILE_APP = window.location.protocol === 'file:';
 const API_CANDIDATES = [
   window.MAHKAMAH_API_BASE,
-  window.location.protocol === 'file:' ? null : `${window.location.origin}/api`,
-  'http://127.0.0.1:8000/api',
-  'http://localhost:8000/api',
+  !IS_FILE_APP ? `${window.location.origin}/api` : null,
+  IS_LOCAL_HOST || IS_FILE_APP ? 'http://127.0.0.1:8000/api' : null,
+  IS_LOCAL_HOST || IS_FILE_APP ? 'http://localhost:8000/api' : null,
 ].filter(Boolean).map(url => url.replace(/\/$/, ''));
 
-let API_BASE = API_CANDIDATES[0] || 'http://127.0.0.1:8000/api';
+let API_BASE = API_CANDIDATES[0] || '';
 let backendReady = false;
 
 /* ============================================================
@@ -118,8 +120,9 @@ function isJsonResponse(res) {
 }
 
 async function fetchJson(endpoint, options) {
+  await ensureBackend();
   const res = await fetch(`${API_BASE}${endpoint}`, options);
-  if (!res.ok || !isJsonResponse(res)) throw new Error(`API unavailable at ${API_BASE}`);
+  if (!res.ok || !isJsonResponse(res)) throw new Error('API FastAPI belum tersedia untuk pencarian live.');
   return res.json();
 }
 
@@ -141,7 +144,12 @@ async function detectBackend() {
 async function ensureBackend() {
   if (backendReady) return true;
   const ok = await detectBackend();
-  if (!ok) throw new Error('API FastAPI belum terhubung untuk pencarian live.');
+  if (!ok) {
+    const hint = IS_LOCAL_HOST || IS_FILE_APP
+      ? 'Jalankan backend FastAPI di localhost:8000 lalu muat ulang.'
+      : 'Situs ini sedang berjalan sebagai frontend statis; pencarian live butuh API FastAPI terpisah.';
+    throw new Error(`API FastAPI belum tersedia untuk pencarian live. ${hint}`);
+  }
   return true;
 }
 
@@ -564,7 +572,6 @@ async function startWarmup() {
   btn.querySelector('.warmup-btn-loader').style.display='inline-flex';
   btn.disabled = true;
   try {
-    await ensureBackend();
     const data = await fetchJson('/warmup', {method:'POST'});
     updateWarmupUI(data.status);
     if (data.status === 'challenge') {
