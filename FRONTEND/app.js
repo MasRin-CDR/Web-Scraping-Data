@@ -296,7 +296,7 @@ async function triggerSearch(pageNum) {
       state.filtered = [...state.results];
       state.totalFromApi = resp.total || state.results.length;
       state.totalPages = resp.total_pages || Math.ceil(state.totalFromApi / state.perPage);
-      showToast(`${resp.total} hasil ditemukan (${resp.source})`, 'success');
+      showToast(resp.total ? `${resp.total} hasil ditemukan (${resp.source})` : (resp.message || 'Tidak ada hasil ditemukan'), resp.total ? 'success' : 'info');
     } else {
       state.results = []; state.filtered = [];
       showToast(resp.message || 'Pencarian gagal', 'error');
@@ -615,6 +615,7 @@ function updateWarmupUI(status) {
     solved:    {icon:'✅', title:'Verifikasi Berhasil',                 desc:'Anda sudah terverifikasi. Silakan mulai pencarian.',        btnText:'Terverifikasi',    btnClass:'solved-btn'},
     failed:    {icon:'❌', title:'Verifikasi Gagal',                    desc:'Terjadi kesalahan. Silakan coba lagi.',                    btnText:'Coba Lagi',        btnClass:''},
     demo:      {icon:'🌐', title:'Mode Online Statis',                 desc:'Dropdown dan filter siap digunakan. Pencarian live aktif saat API FastAPI tersedia.', btnText:'Cek API', btnClass:''},
+    static:    {icon:'🌐', title:'API Production Aktif',                desc:'API Vercel aktif untuk dashboard. Scraping live membutuhkan backend lokal/Docker dengan Chromium Playwright.', btnText:'API Aktif', btnClass:'solved-btn'},
   };
   const c = cfg[status] || cfg.idle;
   DOM.warmupIcon.textContent = c.icon;
