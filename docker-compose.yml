@@ -3,20 +3,18 @@ version: "3.9"
 services:
   scraper:
     build:
-      context: .
+      context: ./BACKEND
       dockerfile: Dockerfile
     container_name: mahkamah_scraper
     restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
-      # Persistent storage: database, pdf, browser profile, logs
       - ./data:/app/data
       - ./logs:/app/logs
     env_file:
       - .env
     environment:
-      # Override headless=true di Docker (tidak ada display)
       - HEADLESS=true
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -24,12 +22,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  # Opsional: jalankan dengan display virtual jika butuh solve Cloudflare manual
-  # Uncomment block di bawah jika perlu mode non-headless di Docker
-  # scraper-visual:
-  #   build: .
-  #   environment:
-  #     - HEADLESS=false
-  #     - DISPLAY=:99
-  #   ...
