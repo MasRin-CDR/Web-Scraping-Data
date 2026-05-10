@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "FRONTEND/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/style.css",
+      "dest": "/FRONTEND/style.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "/FRONTEND/app.js"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/FRONTEND/favicon.ico"
+    },
+    {
+      "src": "/(.*\\.png)",
+      "dest": "/FRONTEND/$1"
+    },
+    {
+      "src": "/(.*\\.jpg)",
+      "dest": "/FRONTEND/$1"
+    },
+    {
+      "src": "/(.*\\.svg)",
+      "dest": "/FRONTEND/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/FRONTEND/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/FRONTEND/index.html"
+    }
+  ]
+}

@@ -3,7 +3,8 @@
 /* ============================================================
    CONFIG
    ============================================================ */
-const API_BASE = window.location.origin + '/api';
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = IS_LOCAL ? window.location.origin + '/api' : '';
 
 /* ============================================================
    DATA
@@ -495,6 +496,7 @@ function updateWarmupUI(status) {
     challenge: {icon:'⚠️', title:'Selesaikan Verifikasi Cloudflare',   desc:'Buka jendela Chromium yang muncul dan klik checkbox verifikasi.', btnText:'Menunggu…', btnClass:''},
     solved:    {icon:'✅', title:'Verifikasi Berhasil',                 desc:'Anda sudah terverifikasi. Silakan mulai pencarian.',        btnText:'Terverifikasi',    btnClass:'solved-btn'},
     failed:    {icon:'❌', title:'Verifikasi Gagal',                    desc:'Terjadi kesalahan. Silakan coba lagi.',                    btnText:'Coba Lagi',        btnClass:''},
+    demo:      {icon:'🌐', title:'Mode Demo — Frontend Only',          desc:'Dashboard ini memerlukan backend FastAPI. Jalankan server di localhost:8000 untuk pencarian live.', btnText:'Info', btnClass:''},
   };
   const c = cfg[status] || cfg.idle;
   DOM.warmupIcon.textContent = c.icon;
@@ -506,6 +508,11 @@ function updateWarmupUI(status) {
 }
 
 async function checkInitialWarmup() {
+  if (!IS_LOCAL) {
+    // Vercel static deploy — no backend available
+    updateWarmupUI('demo');
+    return;
+  }
   try {
     const res = await fetch(`${API_BASE}/warmup-status`);
     const data = await res.json();
@@ -519,10 +526,22 @@ async function checkInitialWarmup() {
    ============================================================ */
 function init() {
   initTheme(); initDropdowns(); initKeyword(); initSorting(); initRealtimeSearch();
-  DOM.searchBtn.addEventListener('click', () => triggerSearch());
+  DOM.searchBtn.addEventListener('click', () => {
+    if (!IS_LOCAL) {
+      showToast('Mode demo — jalankan backend lokal untuk pencarian live','warning');
+      return;
+    }
+    triggerSearch();
+  });
   DOM.resetBtn.addEventListener('click', resetFilter);
   DOM.downloadAllBtn.addEventListener('click', exportCSV);
-  DOM.warmupBtn.addEventListener('click', startWarmup);
+  DOM.warmupBtn.addEventListener('click', () => {
+    if (!IS_LOCAL) {
+      showToast('Mode demo — jalankan backend di localhost:8000','warning');
+      return;
+    }
+    startWarmup();
+  });
   DOM.modalClose.addEventListener('click', closeModal);
   DOM.modalCloseBtn.addEventListener('click', closeModal);
   DOM.detailModal.addEventListener('click', e => { if(e.target===DOM.detailModal) closeModal(); });
