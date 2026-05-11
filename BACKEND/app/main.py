@@ -70,10 +70,12 @@ app.add_middleware(
 app.include_router(api_router)
 
 # ── Serve Frontend Static Files ───────────────────────────────────────────────
-FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "FRONTEND"
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "FRONTEND"
 if FRONTEND_DIR.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
     log.info("Frontend served from {}", FRONTEND_DIR)
+else:
+    log.warning("Frontend dir not found at {} — dashboard tidak akan muncul", FRONTEND_DIR)
 
 
 # ─── CLI Entry ────────────────────────────────────────────────────────────────

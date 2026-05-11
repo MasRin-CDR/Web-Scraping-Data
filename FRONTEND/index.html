@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Direktori Putusan Pengadilan Indonesia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== TOAST NOTIFICATION ===== -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- ===== DARK MODE TOGGLE ===== -->
+  <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode" aria-label="Toggle dark mode" onclick="toggleTheme()">
+    <span class="theme-icon sun">☀</span>
+    <span class="theme-icon moon">☽</span>
+  </button>
+
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-emblem">⚖</div>
+          <div class="brand-text">
+            <h1 class="brand-title">Direktori Putusan</h1>
+            <p class="brand-sub">Pengadilan Republik Indonesia</p>
+          </div>
+        </div>
+        <nav class="header-nav">
+          <a href="#" class="nav-link active">Beranda</a>
+          <a href="#" class="nav-link">Panduan</a>
+          <a href="#" class="nav-link">API</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ===== WARMUP BANNER ===== -->
+  <div id="warmupBar" style="display:none" class="warmup-bar">
+    <div class="container" style="display:flex;align-items:center;gap:12px;padding:10px 0">
+      <span id="warmupDot" class="warmup-dot"></span>
+      <span id="warmupLabel">Memeriksa status verifikasi...</span>
+      <button id="btnWarmup" class="btn btn-sm btn-warmup" onclick="startWarmup()">Mulai Verifikasi</button>
+      <span id="warmupBarMsg" style="margin-left:auto;font-size:13px;opacity:.8"></span>
+    </div>
+  </div>
+
+  <!-- ===== HERO SECTION ===== -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-text">
+        <span class="hero-badge">Database Resmi</span>
+        <h2 class="hero-title">Temukan Putusan Pengadilan</h2>
+        <p class="hero-desc">Akses jutaan putusan dari seluruh pengadilan di Indonesia. Cepat, akurat, dan terpercaya.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-num">4.2M+</span>
+          <span class="stat-label">Putusan</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-num">934</span>
+          <span class="stat-label">Pengadilan</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-num">5</span>
+          <span class="stat-label">Jenis Peradilan</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- SEARCH CARD -->
+      <div class="search-card" id="searchCard">
+        <div class="search-card-header">
+          <h3 class="search-card-title">
+            <svg class="icon-search-heading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Pencarian Putusan
+          </h3>
+          <p class="search-card-subtitle">Gunakan filter di bawah untuk mempersempit hasil pencarian</p>
+        </div>
+
+        <div class="search-form" id="searchForm">
+          <!-- Field 1: Lokasi -->
+          <div class="form-group">
+            <label class="form-label" for="lokasiInput">
+              <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Lokasi Pengadilan
+            </label>
+            <div class="custom-select-wrapper" id="lokasiWrapper">
+              <input type="text" id="lokasiInput" class="form-input searchable-input" placeholder="Pilih Lokasi Pengadilan" autocomplete="off" aria-haspopup="listbox" oninput="filterLokasi(this.value)" onfocus="openLokasiDropdown()" />
+              <span class="select-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+              <div class="dropdown-list" id="lokasiDropdown" role="listbox" aria-label="Pilih lokasi pengadilan"></div>
+            </div>
+          </div>
+
+          <!-- Field 2: Jenis Peradilan -->
+          <div class="form-group">
+            <label class="form-label" for="jenisInput">
+              <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Jenis Peradilan
+            </label>
+            <div class="custom-select-wrapper" id="jenisWrapper">
+              <input type="text" id="jenisInput" class="form-input searchable-input" placeholder="Pilih Jenis Peradilan" autocomplete="off" readonly aria-haspopup="listbox" onclick="toggleJenisDropdown()" />
+              <span class="select-chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+              <div class="dropdown-list" id="jenisDropdown" role="listbox" aria-label="Pilih jenis peradilan"></div>
+            </div>
+          </div>
+
+          <!-- Field 3: Kata Kunci -->
+          <div class="form-group form-group--full">
+            <label class="form-label" for="keywordInput">
+              <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Kata Kunci
+            </label>
+            <div class="input-wrapper">
+              <input type="text" id="keywordInput" class="form-input" placeholder="Masukkan nomor perkara, nama pihak, atau kata kunci" onkeydown="if(event.key==='Enter')doSearch()" oninput="document.getElementById('clearKeyword').style.display=this.value?'flex':'none'" />
+              <span class="input-clear" id="clearKeyword" title="Hapus" style="display:none" onclick="document.getElementById('keywordInput').value='';this.style.display='none'">✕</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="form-actions">
+            <button class="btn btn-reset" id="resetBtn" type="button" onclick="resetForm()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+              Reset Filter
+            </button>
+            <button class="btn btn-search" id="searchBtn" type="button" onclick="doSearch()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <span class="btn-text">Cari Putusan</span>
+              <span class="btn-loader" style="display:none">
+                <span class="spinner"></span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS SECTION -->
+      <section class="results-section" id="resultsSection">
+
+        <!-- Results Header -->
+        <div class="results-header" id="resultsHeader" style="display:none">
+          <div class="results-info">
+            <span class="results-total" id="resultsTotal">0 hasil ditemukan</span>
+            <span class="results-filter-summary" id="filterSummary"></span>
+          </div>
+          <div class="results-controls">
+            <div class="realtime-search-wrapper">
+              <svg class="rt-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" id="realtimeSearch" class="realtime-search" placeholder="Filter hasil..." oninput="filterTable(this.value)" />
+            </div>
+            <button class="btn btn-sm btn-outline" id="downloadAllBtn" onclick="exportCSV()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Wrapper -->
+        <div class="table-wrapper" id="tableWrapper" style="display:none">
+          <table class="results-table" id="resultsTable">
+            <thead>
+              <tr>
+                <th onclick="sortTable(0)" style="cursor:pointer" class="th-sortable" data-col="0">
+                  Nomor Perkara
+                  <span class="sort-icon">↕</span>
+                </th>
+                <th onclick="sortTable(1)" style="cursor:pointer" class="th-sortable" data-col="1">
+                  Tahun
+                  <span class="sort-icon">↕</span>
+                </th>
+                <th onclick="sortTable(2)" style="cursor:pointer" class="th-sortable" data-col="2">
+                  Lokasi
+                  <span class="sort-icon">↕</span>
+                </th>
+                <th onclick="sortTable(3)" style="cursor:pointer" class="th-sortable" data-col="3">
+                  Jenis Peradilan
+                  <span class="sort-icon">↕</span>
+                </th>
+                <th onclick="sortTable(4)" style="cursor:pointer" class="th-sortable th-title" data-col="4">
+                  Judul Perkara
+                  <span class="sort-icon">↕</span>
+                </th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Skeleton Loading -->
+        <div class="skeleton-wrapper" id="skeletonWrapper" style="display:none">
+          <div class="skeleton-table">
+            <div class="skeleton-header"></div>
+            <div class="skeleton-row" style="--d:0.05s"></div>
+            <div class="skeleton-row" style="--d:0.1s"></div>
+            <div class="skeleton-row" style="--d:0.15s"></div>
+            <div class="skeleton-row" style="--d:0.2s"></div>
+            <div class="skeleton-row" style="--d:0.25s"></div>
+            <div class="skeleton-row" style="--d:0.3s"></div>
+            <div class="skeleton-row" style="--d:0.35s"></div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display:none">
+          <div class="empty-icon">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="40" r="38" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.3"/>
+              <path d="M28 52 C28 52 32 44 40 44 C48 44 52 52 52 52" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="32" cy="34" r="3" fill="currentColor" opacity="0.5"/>
+              <circle cx="48" cy="34" r="3" fill="currentColor" opacity="0.5"/>
+              <path d="M20 24 L24 20 M60 24 L56 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+            </svg>
+          </div>
+          <h4 class="empty-title">Belum ada hasil pencarian</h4>
+          <p class="empty-desc">Coba gunakan kata kunci yang berbeda atau perluas filter pencarian Anda</p>
+          <button class="btn btn-outline" onclick="document.getElementById('keywordInput').focus()">Ubah Pencarian</button>
+        </div>
+
+        <!-- Initial State -->
+        <div class="initial-state" id="initialState">
+          <div class="initial-icon">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="36" cy="36" r="22" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+              <path d="m54 54 10 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+              <path d="M29 36h14M36 29v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+            </svg>
+          </div>
+          <h4 class="initial-title">Mulai Pencarian</h4>
+          <p class="initial-desc">Isi form di atas dan klik <strong>Cari Putusan</strong> untuk menampilkan direktori putusan pengadilan</p>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-wrapper" id="paginationWrapper" style="display:none">
+          <div class="pagination-info" id="paginationInfo"></div>
+          <div class="pagination" id="pagination"></div>
+        </div>
+
+      </section>
+
+    </div><!-- /container -->
+  </main>
+
+  <!-- ===== DETAIL MODAL ===== -->
+  <div class="modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">Detail Putusan</span>
+          <h3 class="modal-title" id="modalTitle">—</h3>
+        </div>
+        <button class="modal-close" id="modalClose" aria-label="Tutup modal" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="modalCloseBtn" onclick="closeModal()">Tutup</button>
+        <button class="btn btn-search" id="modalDownloadBtn" onclick="downloadPDF(state.currentDetailUrl)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Unduh PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="footer-emblem">⚖</span>
+          <span>Direktori Putusan Pengadilan Indonesia</span>
+        </div>
+        <p class="footer-note">Data bersumber dari sistem informasi resmi Mahkamah Agung RI &middot; &copy; 2025</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

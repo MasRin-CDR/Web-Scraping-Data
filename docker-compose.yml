@@ -1,17 +1,15 @@
-version: "3.9"
-
 services:
   scraper:
     build:
-      context: ./BACKEND
+      context: .
       dockerfile: Dockerfile
     container_name: mahkamah_scraper
     restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - ./BACKEND/data:/app/data
+      - ./BACKEND/logs:/app/logs
     env_file:
       - .env
     environment:

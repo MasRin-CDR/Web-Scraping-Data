@@ -1,114 +1,90 @@
 """
-main.py - CLI Entry Point for Mahkamah Agung Scraper
+main.py — FastAPI Application Entry Point
+Configures CORS, lifespan (browser + DB), static file serving, and API routing.
 """
 
 from __future__ import annotations
 
-import argparse
-import asyncio
-import signal
-import sys
+import uvicorn
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-# Ensure project root is on the path
-sys.path.insert(0, str(Path(__file__).parent))
-
-from config import settings
-from scraper.scraper import MahkamahScraper
-from utils.logger import log
-
-console = Console()
+from app.api.routes import router as api_router
+from app.config import settings
+from app.models.database import db
+from app.scraper.browser import browser_manager
+from app.utils.logger import log
 
 
-def print_banner() -> None:
-    banner = Text()
-    banner.append("Mahkamah Agung Direktori Scraper\n", style="bold cyan")
-    banner.append("Production-grade async web scraper\n", style="dim")
-    banner.append(f"Target: {settings.target_url}\n", style="yellow")
-    banner.append(f"Max pages: {settings.max_pages} | ", style="white")
-    banner.append(f"Headless: {settings.headless}", style="white")
-    console.print(Panel(banner, border_style="cyan"))
+# ─── Lifespan ─────────────────────────────────────────────────────────────────
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup / shutdown lifecycle for browser and database."""
+    log.info("=" * 60)
+    log.info("Mahkamah Agung Scraper — starting up")
+    log.info("Server: http://{}:{}", settings.host, settings.port)
+    log.info("=" * 60)
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Mahkamah Agung Direktori Scraper",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--pages",
-        type=int,
-        default=None,
-        help=f"Max pages to scrape (default: {settings.max_pages})",
-    )
-    parser.add_argument(
-        "--no-db",
-        action="store_true",
-        help="Skip PostgreSQL output",
-    )
-    parser.add_argument(
-        "--no-csv",
-        action="store_true",
-        help="Skip CSV output",
-    )
-    parser.add_argument(
-        "--headless",
-        action="store_true",
-        default=None,
-        help="Force headless browser mode",
-    )
-    return parser.parse_args()
+    # Init database
+    await db.init()
+    log.success("Database ready")
 
-
-async def main() -> None:
-    print_banner()
-    args = parse_args()
-
-    # CLI overrides
-    if args.headless is not None:
-        settings.headless = args.headless
-
-    use_db = not args.no_db
-    use_csv = not args.no_csv
-    max_pages = args.pages or settings.max_pages
-
-    if not use_db and not use_csv:
-        log.error("At least one output target (--db or --csv) must be enabled")
-        sys.exit(1)
-
-    scraper = MahkamahScraper(
-        use_db=use_db,
-        use_csv=use_csv,
-        max_pages=max_pages,
-    )
-
-    # Graceful shutdown on SIGINT / SIGTERM
-    loop = asyncio.get_running_loop()
-
-    def _shutdown(sig_name: str) -> None:
-        log.warning("Received {} — initiating graceful shutdown…", sig_name)
-        for task in asyncio.all_tasks(loop):
-            task.cancel()
-
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        try:
-            loop.add_signal_handler(sig, lambda s=sig.name: _shutdown(s))
-        except (ValueError, NotImplementedError):
-            # Windows doesn't support add_signal_handler for all signals
-            pass
-
+    # Start browser (lazy — can also be started on first request)
     try:
-        await scraper.run()
-    except (asyncio.CancelledError, KeyboardInterrupt):
-        log.info("Scraper shut down cleanly")
+        await browser_manager.start()
     except Exception as exc:
-        log.exception("Fatal error: {}", exc)
-        sys.exit(1)
+        log.warning("Browser startup deferred: {} — will start on first request", exc)
 
+    yield  # ← app is running
+
+    # Shutdown
+    log.info("Shutting down…")
+    await browser_manager.stop()
+    log.info("Goodbye 👋")
+
+
+# ─── FastAPI App ──────────────────────────────────────────────────────────────
+
+app = FastAPI(
+    title="Direktori Putusan Mahkamah Agung — API",
+    description="Real-time web scraping API for Indonesian court decisions",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins.split(","),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── API Routes ────────────────────────────────────────────────────────────────
+app.include_router(api_router)
+
+# ── Serve Frontend Static Files ───────────────────────────────────────────────
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "FRONTEND"
+if FRONTEND_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+    log.info("Frontend served from {}", FRONTEND_DIR)
+else:
+    log.warning("Frontend dir not found at {} — dashboard tidak akan muncul", FRONTEND_DIR)
+
+
+# ─── CLI Entry ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    uvicorn.run(
+        "app.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug,
+        log_level=settings.log_level.lower(),
+    )
