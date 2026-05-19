@@ -95,6 +95,12 @@ class HealthResponse(BaseModel):
     browser_ready: bool = False
     database_ready: bool = False
     cf_clearance: bool = False
+    python_version: str = ""
+    recommended_python: str = "3.11"
+    playwright_version: str = ""
+    chromium_version: str = ""
+    chromium_executable: str = ""
+    browser_launch_status: str = "unknown"
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 

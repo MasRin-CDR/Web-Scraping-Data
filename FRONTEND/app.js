@@ -389,7 +389,7 @@ function renderTable() {
     const tahun = escHtml(String(item.tahun || item.year || '-'));
     const lokasi = escHtml(item.lokasi || item.pengadilan || '-');
     const jenis = escHtml(item.jenis_peradilan || item.jenis || '-');
-    const detailUrl = item.url || item.detail_url || '';
+    const detailUrl = item.url_detail || item.url || item.detail_url || '';
 
     return `
       <tr onclick="openDetail('${escAttr(detailUrl)}', '${escAttr(nomor)}')">
@@ -554,8 +554,10 @@ async function openDetail(url, nomor) {
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    renderDetailModal(data);
+    const resp = await res.json();
+    // Backend wraps detail in { data: {...} }
+    const detail = resp.data || resp;
+    renderDetailModal(detail);
   } catch (err) {
     document.getElementById('modalBody').innerHTML =
       `<p style="color:var(--danger);font-size:13px">Gagal memuat detail: ${err.message}</p>`;
@@ -574,7 +576,7 @@ function renderDetailModal(data) {
     ['Hakim',            data.hakim || '-'],
     ['Amar Putusan',     data.amar || data.amar_putusan || '-'],
     ['Klasifikasi',      data.klasifikasi || '-'],
-    ['Link PDF',         data.pdf_url ? `<a href="${escHtml(data.pdf_url)}" target="_blank" style="color:var(--accent)">Buka PDF ↗</a>` : '-'],
+    ['Link PDF',         (data.url_pdf || data.pdf_url) ? `<a href="${escHtml(data.url_pdf || data.pdf_url)}" target="_blank" style="color:var(--accent)">Buka PDF ↗</a>` : '-'],
   ];
 
   document.getElementById('modalBody').innerHTML = `
@@ -590,9 +592,10 @@ function renderDetailModal(data) {
 
   // Show/hide PDF button
   const pdfBtn = document.getElementById('modalDownloadBtn');
-  if (data.pdf_url) {
+  const pdfUrl = data.url_pdf || data.pdf_url;
+  if (pdfUrl) {
     pdfBtn.style.display = '';
-    state.currentDetailUrl = data.pdf_url;
+    state.currentDetailUrl = pdfUrl;
   } else {
     pdfBtn.style.display = 'none';
   }

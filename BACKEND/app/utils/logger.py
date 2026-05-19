@@ -12,6 +12,14 @@ def setup_logger(name: str = "mahkamah") -> "logger":
     """Configure loguru: coloured console, rotating files, separate error log."""
     logger.remove()
 
+    # Windows PowerShell may default to cp1252; keep Unicode log messages from
+    # crashing the console sink when emoji or Indonesian punctuation appears.
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     fmt_console = (
         "<green>{time:HH:mm:ss}</green> | "
         "<level>{level: <8}</level> | "

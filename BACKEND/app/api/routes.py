@@ -7,6 +7,8 @@ Includes warm-up endpoints for Cloudflare Turnstile bypass.
 from __future__ import annotations
 
 import re
+import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
@@ -33,11 +35,43 @@ router = APIRouter(prefix="/api", tags=["Scraper API"])
 async def health_check():
     """Application health check."""
     has_cf = await browser_manager.has_cf_clearance()
+    try:
+        playwright_version = version("playwright")
+    except PackageNotFoundError:
+        playwright_version = "<not installed>"
+    except Exception:
+        playwright_version = "<unknown>"
+
+    chromium_executable = "<unknown>"
+    chromium_version = "<unknown>"
+    if getattr(browser_manager, "_playwright", None):
+        chromium_executable = getattr(
+            getattr(browser_manager._playwright, "chromium", None),
+            "executable_path",
+            "<unknown>",
+        )
+    if getattr(browser_manager, "_context", None):
+        try:
+            browser = browser_manager._context.browser
+            chromium_version = (
+                await browser.version()
+                if browser is not None
+                else "<persistent-context>"
+            )
+        except Exception:
+            chromium_version = "<unknown>"
+
     return HealthResponse(
         status="ok",
         browser_ready=browser_manager.is_ready,
         database_ready=True,
         cf_clearance=has_cf,
+        python_version=sys.version.split()[0],
+        recommended_python="3.11",
+        playwright_version=playwright_version,
+        chromium_executable=chromium_executable,
+        chromium_version=chromium_version,
+        browser_launch_status="ready" if browser_manager.is_ready else "stopped",
     )
 
 

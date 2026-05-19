@@ -35,6 +35,14 @@ env/
 BACKEND/data/browser_profile/
 BACKEND/data/session_cookies.json
 
+# ── Cookies & Session (Cloudflare cf_clearance) ───────────────
+# JANGAN commit cookie session — berisi data sensitif!
+BACKEND/cookies/session.json
+cookies/session.json
+
+# ── Screenshots (debug challenge) ────────────────────────────
+BACKEND/data/screenshots/
+
 # ── Database ─────────────────────────────────────────────────
 *.db
 *.sqlite
